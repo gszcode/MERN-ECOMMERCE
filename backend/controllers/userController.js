@@ -36,7 +36,7 @@ exports.loginUser = catchAsyncError(async (req, res, next) => {
     return next(new ErrorHandler("Invalid email or password", 401));
   }
 
-  const isPasswordMatched = user.comparePassword(password);
+  const isPasswordMatched = await user.comparePassword(password);
 
   if (!isPasswordMatched) {
     return next(new ErrorHandler("Invalid email or password", 401));
@@ -131,4 +131,51 @@ exports.resetPassword = catchAsyncError(async (req, res, next) => {
   await user.save();
 
   sendToken(user, 200, res);
+});
+
+// Get user detail
+exports.getUserDetails = catchAsyncError(async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+
+  return res.status(200).json({
+    success: true,
+    user,
+  });
+});
+
+// Update user password
+exports.updatePassword = catchAsyncError(async (req, res, next) => {
+  const { oldPassword, newPassword, confirmPassword } = req.body;
+  const user = await User.findById(req.user.id).select("+password");
+
+  const isPasswordMatched = await user.comparePassword(oldPassword);
+
+  if (!isPasswordMatched) {
+    return next(new ErrorHandler("Old password is incorrect", 400));
+  }
+
+  if (newPassword !== confirmPassword) {
+    return next(new ErrorHandler("Passwords does not match", 400));
+  }
+
+  user.password = newPassword;
+  await user.save();
+
+  sendToken(user, 200, res);
+});
+
+// Update user profile
+exports.updateProfile = catchAsyncError(async (req, res, next) => {
+  const { name, email } = req.body;
+
+  const user = await User.findByIdAndUpdate(
+    req.user.id,
+    { name, email },
+    { new: true, runValidators: true, useFindAndModify: false }
+  );
+  // We will add cloudinary later
+
+  return res.status(200).json({
+    success: true,
+  });
 });
