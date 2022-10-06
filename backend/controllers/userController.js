@@ -113,7 +113,7 @@ exports.resetPassword = catchAsyncError(async (req, res, next) => {
 
   if (!user) {
     return next(
-      new ErrorHander(
+      new ErrorHandler(
         "Reset Password Token is invalid or has been expired",
         400
       )
@@ -168,7 +168,7 @@ exports.updatePassword = catchAsyncError(async (req, res, next) => {
 exports.updateProfile = catchAsyncError(async (req, res, next) => {
   const { name, email } = req.body;
 
-  const user = await User.findByIdAndUpdate(
+  await User.findByIdAndUpdate(
     req.user.id,
     { name, email },
     { new: true, runValidators: true, useFindAndModify: false }
@@ -177,5 +177,62 @@ exports.updateProfile = catchAsyncError(async (req, res, next) => {
 
   return res.status(200).json({
     success: true,
+  });
+});
+
+// Get all users (admin)
+exports.getAllUsers = catchAsyncError(async (req, res) => {
+  const users = await User.find();
+
+  return res.status(200).json({
+    success: true,
+    users,
+  });
+});
+
+// Get single user (admin)
+exports.getSingleUser = catchAsyncError(async (req, res, next) => {
+  const { id } = req.params;
+  const user = await User.findById(id);
+
+  if (!user) {
+    return next(new ErrorHandler(`User does not exist with ID: ${id}`, 400));
+  }
+
+  return res.status(200).json({
+    success: true,
+    user,
+  });
+});
+
+// Update user role (admin)
+exports.updateUserRole = catchAsyncError(async (req, res, next) => {
+  const { name, email, role } = req.body;
+
+  await User.findByIdAndUpdate(
+    req.params.id,
+    { name, email, role },
+    { new: true, runValidators: true, useFindAndModify: false }
+  );
+
+  return res.status(200).json({
+    success: true,
+  });
+});
+
+// Delete user (admin)
+exports.deleteUser = catchAsyncError(async (req, res, next) => {
+  const { id } = req.params;
+  const user = await User.findById(id);
+
+  if (!user) {
+    return next(new ErrorHandler(`User does not exist with ID: ${id}`, 400));
+  }
+
+  await user.remove();
+
+  return res.status(200).json({
+    success: true,
+    message: "User delete successfully",
   });
 });
